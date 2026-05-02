@@ -1,4 +1,4 @@
-#pragma once  // вместо "#pragma onece"
+#pragma once
 
 #include <iostream>
 

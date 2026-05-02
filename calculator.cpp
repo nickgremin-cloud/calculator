@@ -1,43 +1,44 @@
 #include "calculator.h"
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <cmath>
 #include <limits>
+#include <cstdlib>
+#include <cctype>
+
+static bool isValidNumber(const std::string& str, Number& result);
 
 bool ReadNumber(Number& result)
 {
     std::string input;
-    if (!(std::cin >> input)) {
-        return false;
-    }
+    std::cin >> input;
 
-    std::stringstream ss(input);
     Number value;
-    if (ss >> value && ss.eof()) {
+    if (isValidNumber(input, value)) {
         result = value;
         return true;
+    } else {
+        std::cerr << "Error: Numeric operand expected" << std::endl;
+        return false;
     }
-    std::cerr << "Error: Numeric operand expected" << std::endl;
-    return false;
 }
 
 bool RunCalculatorCycle()
 {
     Number currentValue = 0;
-    bool memoryInitialized = false;
-    Number memoryValue = 0;
-    bool firstToken = true;
+    bool memoryHasValue = false;
+    Number memoryStore = 0;
 
-    std::string command;
-    while (std::cin >> command)
+    std::string token;
+    bool isFirst = true;
+
+    while (std::cin >> token)
     {
-        if (firstToken) {
-            std::stringstream ss(command);
-            Number value;
-            if (ss >> value && ss.eof()) {
-                currentValue = value;
-                firstToken = false;
+        if (isFirst) {
+            Number firstNum;
+            if (isValidNumber(token, firstNum)) {
+                currentValue = firstNum;
+                isFirst = false;
                 continue;
             } else {
                 std::cerr << "Error: Numeric operand expected" << std::endl;
@@ -45,75 +46,147 @@ bool RunCalculatorCycle()
             }
         }
 
-        if (command == "q") {
+        if (token == "q") {
             return true;
-        } else if(command == "=") {
+        }
+        
+        if (token == "=") {
             std::cout << currentValue << std::endl;
-        } else if (command == "c") {
+            continue;
+        }
+        
+        if (token == "c") {
             currentValue = 0;
-        } else if (command == "s") {
-            memoryValue = currentValue;
-            memoryInitialized = true;
-        } else if (command == "l") {
-            if (!memoryInitialized) {
+            continue;
+        }
+        
+        if (token == "s") {
+            memoryStore = currentValue;
+            memoryHasValue = true;
+            continue;
+        }
+        
+        if (token == "l") {
+            if (!memoryHasValue) {
                 std::cerr << "Error: Memory is empty" << std::endl;
                 return false;
             }
-            currentValue = memoryValue;
-        } 
-        
-        else if (command == "+") {
+            currentValue = memoryStore;
+            continue;
+        }
+
+        if (token == "+") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
-            currentValue += operand;
-        } else if(command == "-") {
+            currentValue = currentValue + operand;
+            continue;
+        }
+
+        if (token == "-") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
-            currentValue -= operand;
-        } else if (command == "*") {
+            currentValue = currentValue - operand;
+            continue;
+        }
+
+        if (token == "*") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
-            currentValue *= operand;
-        } else if (command == "/") {
+            currentValue = currentValue * operand;
+            continue;
+        }
+
+        if (token == "/") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
+            
             if (operand == 0) {
                 currentValue = std::numeric_limits<Number>::infinity();
             } else {
-                currentValue /= operand;
+                currentValue = currentValue / operand;
             }
-        } else if (command == "**") {
+            continue;
+        }
+
+        if (token == "**") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
             currentValue = std::pow(currentValue, operand);
-        } else if (command == ":") {
+            continue;
+        }
+
+        if (token == ":") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
             currentValue = operand;
+            continue;
+        }
+
+        Number checkValue;
+        if (isValidNumber(token, checkValue)) {
+            std::cerr << "Error: Numeric operand expected" << std::endl;
+            return false;
         } else {
-            std::stringstream ss(command);
-            Number value;
-            if (ss >> value && ss.eof()) {
-                std::cerr << "Error: Numeric operand expected" << std::endl;
-                return false;
-            } else {
-                std::cerr << "Error: Unknown token " << command << std::endl;
-                return false;
-            }
+            std::cerr << "Error: Unknown token " << token << std::endl;
+            return false;
         }
     }
 
     return true;
+}
+
+static bool isValidNumber(const std::string& str, Number& result) {
+    if (str.empty()) return false;
+    
+    size_t pos = 0;
+    bool hasDigit = false;
+    
+    if (str[pos] == '+' || str[pos] == '-') {
+        pos++;
+    }
+    
+    while (pos < str.length() && std::isdigit(str[pos])) {
+        hasDigit = true;
+        pos++;
+    }
+    
+    if (pos < str.length() && str[pos] == '.') {
+        pos++;
+    }
+    
+    while (pos < str.length() && std::isdigit(str[pos])) {
+        hasDigit = true;
+        pos++;
+    }
+    
+    if (pos < str.length() && (str[pos] == 'e' || str[pos] == 'E')) {
+        pos++;
+        if (pos < str.length() && (str[pos] == '+' || str[pos] == '-')) {
+            pos++;
+        }
+        while (pos < str.length() && std::isdigit(str[pos])) {
+            hasDigit = true;
+            pos++;
+        }
+    }
+    
+    if (pos == str.length() && hasDigit) {
+        char* endptr;
+        result = std::atof(str.c_str());
+        return true;
+    } else {
+        return false;
+    }
 }
