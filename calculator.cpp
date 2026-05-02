@@ -3,8 +3,10 @@
 #include <string>
 #include <sstream>
 #include <cmath>
+#include <limits>
 
-bool ReadNumber(Number& result) {
+bool ReadNumber(Number& result)
+{
     std::string input;
     if (!(std::cin >> input)) {
         return false;
@@ -22,74 +24,94 @@ bool ReadNumber(Number& result) {
 
 bool RunCalculatorCycle()
 {
-    Number curr_val = 0;
-    bool memory_init = false;
-    Number memory_val = 0;
+    Number currentValue = 0;
+    bool memoryInitialized = false;
+    Number memoryValue = 0;
+    bool firstToken = true;
 
     std::string command;
-
     while (std::cin >> command)
     {
+        if (firstToken) {
+            std::stringstream ss(command);
+            Number value;
+            if (ss >> value && ss.eof()) {
+                currentValue = value;
+                firstToken = false;
+                continue;
+            } else {
+                std::cerr << "Error: Numeric operand expected" << std::endl;
+                return false;
+            }
+        }
+
         if (command == "q") {
             return true;
         } else if(command == "=") {
-            std::cout << curr_val << std::endl;
+            std::cout << currentValue << std::endl;
         } else if (command == "c") {
-            curr_val = 0;
+            currentValue = 0;
         } else if (command == "s") {
-            memory_val = curr_val;
-            memory_init = true;
+            memoryValue = currentValue;
+            memoryInitialized = true;
         } else if (command == "l") {
-            if (!memory_init) {
-                std::cerr << "Error: Memory is empty." << std::endl;
+            if (!memoryInitialized) {
+                std::cerr << "Error: Memory is empty" << std::endl;
                 return false;
             }
-            curr_val = memory_val;
+            currentValue = memoryValue;
         } 
         
         else if (command == "+") {
             Number operand;
             if (!ReadNumber(operand)) {
-                return  false;
+                return false;
             }
-            curr_val = curr_val + operand;
+            currentValue += operand;
         } else if(command == "-") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
-            curr_val = curr_val - operand;
+            currentValue -= operand;
         } else if (command == "*") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
-            curr_val = curr_val * operand;
+            currentValue *= operand;
         } else if (command == "/") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
             if (operand == 0) {
-                std::cerr << "Error: Division by zero" << std::endl;
-                return false;
+                currentValue = std::numeric_limits<Number>::infinity();
+            } else {
+                currentValue /= operand;
             }
-            curr_val = curr_val / operand;
         } else if (command == "**") {
             Number operand;
             if (!ReadNumber(operand)) {
                 return false;
             }
-            curr_val = pow(curr_val, operand);
+            currentValue = std::pow(currentValue, operand);
         } else if (command == ":") {
             Number operand;
-            if (!ReadNumber(operand)){
+            if (!ReadNumber(operand)) {
                 return false;
             }
-            curr_val = operand;
+            currentValue = operand;
         } else {
-            std::cerr << "Error: Unknown token " << command << std::endl;
-            return false;
+            std::stringstream ss(command);
+            Number value;
+            if (ss >> value && ss.eof()) {
+                std::cerr << "Error: Numeric operand expected" << std::endl;
+                return false;
+            } else {
+                std::cerr << "Error: Unknown token " << command << std::endl;
+                return false;
+            }
         }
     }
 
